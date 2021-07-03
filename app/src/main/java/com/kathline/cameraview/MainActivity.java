@@ -1,7 +1,10 @@
 package com.kathline.cameraview;
 
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
@@ -12,8 +15,11 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.kathline.cameralib.CameraInterface;
 import com.kathline.cameralib.CameraSourcePreview;
+import com.kathline.cameralib.FileUtil;
 import com.kathline.cameralib.GraphicOverlay;
 import com.kathline.cameralib.MLKit;
+
+import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -29,6 +35,9 @@ public class MainActivity extends AppCompatActivity {
     private ImageView mImgPhoto;
     private SurfaceView mSvRecordVideo;
 
+    private String videoFilePath = "";
+    private Bitmap mBitmap;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,7 +52,23 @@ public class MainActivity extends AppCompatActivity {
         mIvRecordVideoCancel = findViewById(R.id.iv_record_video_cancel);
         mIvRecordVideoConfirm = findViewById(R.id.iv_record_video_confirm);
 
+        mCircleView.setMaxTime(10);
         mIvRecordVideoConfirm.setType(TypeButton.TYPE_CONFIRM);
+
+        String applicationName = getString(R.string.app_name);
+        try {
+            PackageManager packageManager = getApplicationContext().getPackageManager();
+            ApplicationInfo applicationInfo = packageManager.getApplicationInfo(getPackageName(), 0);
+            applicationName = (String) packageManager.getApplicationLabel(applicationInfo);
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+        if (FileUtil.beforeAndroidTen()) {
+            CameraInterface.getInstance().setSaveVideoPath(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + File.separator + applicationName);
+        } else {
+            CameraInterface.getInstance().setSaveVideoPath(getExternalFilesDir(Environment.DIRECTORY_DCIM) + File.separator + applicationName);
+        }
+
         mlKit = new MLKit(this, mPreviewView, mGraphicOverlay);
         mImgSwitchCamera.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -57,8 +82,10 @@ public class MainActivity extends AppCompatActivity {
                 CameraInterface.getInstance().takePicture(mlKit.getCameraSource(), new CameraInterface.TakePictureCallback() {
                     @Override
                     public void captureResult(Bitmap bitmap, boolean isVertical) {
+                        mBitmap = bitmap;
                         mClPhoto.setVisibility(View.VISIBLE);
                         mImgPhoto.setVisibility(View.VISIBLE);
+                        mSvRecordVideo.setVisibility(View.GONE);
                         mImgPhoto.setImageBitmap(bitmap);
                     }
                 });
@@ -72,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onNoMinRecord(int currentTime) {
-                CameraInterface.getInstance().stopRecord(false, new CameraInterface.StopRecordCallback() {
+                CameraInterface.getInstance().stopRecord(true, new CameraInterface.StopRecordCallback() {
                     @Override
                     public void recordResult(String url, Bitmap firstFrame) {
 
@@ -82,11 +109,13 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onRecordFinishedListener() {
-                CameraInterface.getInstance().stopRecord(true, new CameraInterface.StopRecordCallback() {
+                CameraInterface.getInstance().stopRecord(false, new CameraInterface.StopRecordCallback() {
                     @Override
                     public void recordResult(String url, Bitmap firstFrame) {
                         Log.i(TAG, "recordResult: " + url);
+                        videoFilePath = url;
                         mClPhoto.setVisibility(View.VISIBLE);
+                        mImgPhoto.setVisibility(View.GONE);
                         mSvRecordVideo.setVisibility(View.VISIBLE);
                         CameraInterface.getInstance().playVideo(mSvRecordVideo, firstFrame, url);
                     }
@@ -97,12 +126,25 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 mClPhoto.setVisibility(View.GONE);
+                if(mSvRecordVideo.getVisibility() == View.VISIBLE) {
+                    CameraInterface.getInstance().stopVideo();
+                    FileUtil.deleteFile(videoFilePath);
+                }
             }
         });
+        String finalApplicationName = applicationName;
         mIvRecordVideoConfirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                if(mImgPhoto.getVisibility() == View.VISIBLE) {
+                    //获取图片bitmap
+                    String path;
+                    if (FileUtil.beforeAndroidTen()) {
+                        path = FileUtil.saveBitmap(finalApplicationName, mBitmap);
+                    } else {
+                        path = FileUtil.saveBitmapAndroidQ(MainActivity.this, finalApplicationName, mBitmap);
+                    }
+                }
             }
         });
     }

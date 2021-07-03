@@ -1,40 +1,35 @@
 package com.kathline.cameralib;
 
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.ImageFormat;
 import android.graphics.Matrix;
-import android.graphics.Rect;
-import android.graphics.RectF;
-import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
+import android.media.CamcorderProfile;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Environment;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import static android.graphics.Bitmap.createBitmap;
@@ -49,7 +44,7 @@ import static android.graphics.Bitmap.createBitmap;
  */
 public class CameraInterface {
 
-    private static final String TAG = "CJT";
+    private static final String TAG = "CameraInterface";
 
     private volatile static CameraInterface mCameraInterface;
 
@@ -69,9 +64,7 @@ public class CameraInterface {
     private String videoFileAbsPath;
     private Bitmap videoFirstFrame = null;
     private MediaPlayer mMediaPlayer;
-
-    private int preview_width;
-    private int preview_height;
+    private boolean isSurfaceCreated;
 
     private int angle = 0;
     private int cameraAngle = 90;//摄像头角度   默认为90度
@@ -116,7 +109,7 @@ public class CameraInterface {
     };
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    void setSaveVideoPath(String saveVideoPath) {
+    public void setSaveVideoPath(String saveVideoPath) {
         this.saveVideoPath = saveVideoPath;
         File file = new File(saveVideoPath);
         if (!file.exists()) {
@@ -206,6 +199,7 @@ public class CameraInterface {
      * 拍照
      */
     private int nowAngle;
+    private boolean safeToTakePicture = true;
 
     public void takePicture(CameraSource cameraSource, final TakePictureCallback callback) {
         mCamera = cameraSource.getCamera();
@@ -221,36 +215,40 @@ public class CameraInterface {
                 break;
         }
 //
-        Log.i("CJT", angle + " = " + cameraAngle + " = " + nowAngle);
-        mCamera.takePicture(null, null, new Camera.PictureCallback() {
-            @Override
-            public void onPictureTaken(byte[] data, Camera camera) {
-                mCamera.startPreview();
-                Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-                Matrix matrix = new Matrix();
-                if (cameraSource.getCameraFacing() == CameraSource.CAMERA_FACING_BACK) {
-                    matrix.setRotate(nowAngle);
-                } else if (cameraSource.getCameraFacing() == CameraSource.CAMERA_FACING_FRONT) {
-                    matrix.setRotate(360 - nowAngle);
-                    matrix.postScale(-1, 1);
-                }
+        Log.i(TAG, angle + " = " + cameraAngle + " = " + nowAngle);
+        if(safeToTakePicture) {
+            safeToTakePicture = false;
+            mCamera.takePicture(null, null, new Camera.PictureCallback() {
+                @Override
+                public void onPictureTaken(byte[] data, Camera camera) {
+                    safeToTakePicture = true;
+                    mCamera.startPreview();
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+                    Matrix matrix = new Matrix();
+                    if (cameraSource.getCameraFacing() == CameraSource.CAMERA_FACING_BACK) {
+                        matrix.setRotate(nowAngle);
+                    } else if (cameraSource.getCameraFacing() == CameraSource.CAMERA_FACING_FRONT) {
+                        matrix.setRotate(360 - nowAngle);
+                        matrix.postScale(-1, 1);
+                    }
 
-                bitmap = createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-                if (callback != null) {
-                    if (nowAngle == 90 || nowAngle == 270) {
-                        callback.captureResult(bitmap, true);
-                    } else {
-                        callback.captureResult(bitmap, false);
+                    bitmap = createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                    if (callback != null) {
+                        if (nowAngle == 90 || nowAngle == 270) {
+                            callback.captureResult(bitmap, true);
+                        } else {
+                            callback.captureResult(bitmap, false);
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
     }
 
     //启动录像
     public void startRecord(CameraSource cameraSource, Surface surface) {
         mCamera = cameraSource.getCamera();
-        if(mCamera == null) {
+        if (mCamera == null) {
             return;
         }
 //        mCamera.setPreviewCallback(null);
@@ -262,9 +260,7 @@ public class CameraInterface {
         if (mediaRecorder == null) {
             mediaRecorder = new MediaRecorder();
         }
-        if (mParams == null) {
-            mParams = mCamera.getParameters();
-        }
+        mParams = mCamera.getParameters();
         List<String> focusModes = mParams.getSupportedFocusModes();
         if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
             mParams.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
@@ -281,20 +277,22 @@ public class CameraInterface {
         mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
         mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 
-
-//        Camera.Size videoSize;
-//        if (mParams.getSupportedVideoSizes() == null) {
-//            videoSize = CameraParamUtil.getInstance().getPreviewSize(mParams.getSupportedPreviewSizes(), 800, screenProp);
-//        } else {
-//            videoSize = CameraParamUtil.getInstance().getPreviewSize(mParams.getSupportedVideoSizes(), 800, screenProp);
-//        }
-//        Log.i(TAG, "setVideoSize    width = " + videoSize.width + "height = " + videoSize.height);
-//        if (videoSize.width == videoSize.height) {
-//            mediaRecorder.setVideoSize(preview_width, preview_height);
-//        } else {
-//            mediaRecorder.setVideoSize(videoSize.width, videoSize.height);
-//        }
-        mediaRecorder.setVideoSize(640, 480);
+        float videoRatio = -1;//视频宽高比
+        if (CamcorderProfile.hasProfile(CamcorderProfile.QUALITY_HIGH)) {
+            CamcorderProfile profile = CamcorderProfile.get(cameraSource.getCameraFacing(), CamcorderProfile.QUALITY_HIGH);
+            if (profile != null) {
+                videoRatio = profile.videoFrameWidth * 1.0f / profile.videoFrameHeight;
+            }
+        }
+        Camera.Size videoSize;
+        if (mParams.getSupportedVideoSizes() == null) {
+            videoSize = CameraParamUtil.getInstance().getPreviewSize(mParams.getSupportedPreviewSizes(), 800, videoRatio);
+        } else {
+            videoSize = CameraParamUtil.getInstance().getPreviewSize(mParams.getSupportedVideoSizes(), 800, videoRatio);
+        }
+        Log.i(TAG, "setVideoSize    width = " + videoSize.width + "height = " + videoSize.height);
+        mediaRecorder.setVideoSize(videoSize.width, videoSize.height);
+//        mediaRecorder.setVideoSize(640, 480);
 //        if (SELECTED_CAMERA == CAMERA_FRONT_POSITION) {
 //            mediaRecorder.setOrientationHint(270);
 //        } else {
@@ -340,6 +338,7 @@ public class CameraInterface {
             saveVideoPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath();
         }
         videoFileAbsPath = saveVideoPath + File.separator + videoFileName;
+        Log.i(TAG, "videoFileAbsPath: " + videoFileAbsPath);
         mediaRecorder.setOutputFile(videoFileAbsPath);
         try {
             mediaRecorder.prepare();
@@ -347,12 +346,12 @@ public class CameraInterface {
             isRecorder = true;
         } catch (IllegalStateException e) {
             e.printStackTrace();
-            Log.i("CJT", "startRecord IllegalStateException");
+            Log.i(TAG, "startRecord IllegalStateException");
         } catch (IOException e) {
             e.printStackTrace();
-            Log.i("CJT", "startRecord IOException");
+            Log.i(TAG, "startRecord IOException");
         } catch (RuntimeException e) {
-            Log.i("CJT", "startRecord RuntimeException");
+            Log.i(TAG, "startRecord RuntimeException");
         }
     }
 
@@ -386,6 +385,12 @@ public class CameraInterface {
                 }
                 return;
             }
+            //停顿200毫秒，确保写入数据结束完成
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             String fileName = saveVideoPath + File.separator + videoFileName;
             callback.recordResult(fileName, videoFirstFrame);
         }
@@ -400,42 +405,62 @@ public class CameraInterface {
     }
 
     public void playVideo(SurfaceView surfaceView, Bitmap firstFrame, final String url) {
-        saveVideoPath = url;
+        if (TextUtils.isEmpty(url)) {
+            return;
+        }
         this.videoFirstFrame = firstFrame;
         new Thread(new Runnable() {
             @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
             @Override
             public void run() {
-                try {
-                    if (mMediaPlayer == null) {
-                        mMediaPlayer = new MediaPlayer();
-                    } else {
-                        mMediaPlayer.reset();
+                if (mMediaPlayer == null) {
+                    mMediaPlayer = new MediaPlayer();
+                } else {
+                    mMediaPlayer.reset();
+                }
+                surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+                    @Override
+                    public void surfaceCreated(@NonNull SurfaceHolder holder) {
+                        isSurfaceCreated = true;
+                        mMediaPlayer.setDisplay(surfaceView.getHolder());
                     }
+
+                    @Override
+                    public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
+
+                    }
+
+                    @Override
+                    public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
+                        isSurfaceCreated = false;
+                    }
+                });
+                if(isSurfaceCreated) {
+                    mMediaPlayer.setDisplay(surfaceView.getHolder());
+                }
+                try {
                     mMediaPlayer.setDataSource(url);
-                    mMediaPlayer.setSurface(surfaceView.getHolder().getSurface());
                     mMediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT);
                     mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                    mMediaPlayer.setOnVideoSizeChangedListener(new MediaPlayer
-                            .OnVideoSizeChangedListener() {
-                        @Override
-                        public void
-                        onVideoSizeChanged(MediaPlayer mp, int width, int height) {
-                            updateVideoViewSize(surfaceView, mMediaPlayer.getVideoWidth(), mMediaPlayer
-                                    .getVideoHeight());
-                        }
-                    });
-                    mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                        @Override
-                        public void onPrepared(MediaPlayer mp) {
-                            mMediaPlayer.start();
-                        }
-                    });
                     mMediaPlayer.setLooping(true);
                     mMediaPlayer.prepare();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                mMediaPlayer.setOnVideoSizeChangedListener(new MediaPlayer
+                        .OnVideoSizeChangedListener() {
+                    @Override
+                    public void
+                    onVideoSizeChanged(MediaPlayer mp, int width, int height) {
+                        updateVideoViewSize(surfaceView, mMediaPlayer.getVideoWidth(), mMediaPlayer.getVideoHeight());
+                    }
+                });
+                mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                    @Override
+                    public void onPrepared(MediaPlayer mp) {
+                        mMediaPlayer.start();
+                    }
+                });
             }
         }).start();
     }
@@ -449,13 +474,14 @@ public class CameraInterface {
     }
 
     private void updateVideoViewSize(SurfaceView surfaceView, float videoWidth, float videoHeight) {
-        if (videoWidth > videoHeight) {
-            FrameLayout.LayoutParams videoViewParam;
-            int height = (int) ((videoHeight / videoWidth) * surfaceView.getWidth());
-            videoViewParam = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, height);
-            videoViewParam.gravity = Gravity.CENTER;
-            surfaceView.setLayoutParams(videoViewParam);
-        }
+        int width = surfaceView.getWidth();
+        int height = (int) ((videoHeight*1f / videoWidth) * width);
+        ViewGroup.MarginLayoutParams videoViewParam;
+        videoViewParam = (ViewGroup.MarginLayoutParams) surfaceView.getLayoutParams();
+        videoViewParam.width = width;
+        videoViewParam.height = height;
+//            videoViewParam.gravity = Gravity.CENTER;
+        surfaceView.setLayoutParams(videoViewParam);
     }
 
     void registerSensorManager(Context context) {

@@ -5,6 +5,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 
@@ -159,5 +160,10 @@ public class FileUtil {
             return true;
         }
         return false;
+    }
+
+    //Android 10 之前的版本
+    public static boolean beforeAndroidTen() {
+        return android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.Q;
     }
 }

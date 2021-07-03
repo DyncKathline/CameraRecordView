@@ -34,7 +34,7 @@ public class CircleButtonView extends View {
     private float mCurrentProgress;//当前进度
 
     private long mLongClickTime = 500;//长按最短时间(毫秒)，
-    private int mTime = 5;//录制最大时间s
+    private int mMaxTime = 5;//录制最大时间s
     private int mMinTime = 3;//录制最短时间
     private int mProgressColor;//进度条颜色
     private float mProgressW = 18f;//圆环宽度
@@ -62,7 +62,7 @@ public class CircleButtonView extends View {
         this.mContext = context;
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.CircleButtonView);
         mMinTime = a.getInt(R.styleable.CircleButtonView_minTime, 0);
-        mTime = a.getInt(R.styleable.CircleButtonView_maxTime, 10);
+        mMaxTime = a.getInt(R.styleable.CircleButtonView_maxTime, 10);
         mProgressW = a.getDimension(R.styleable.CircleButtonView_progressWidth, 12f);
         mProgressColor = a.getColor(R.styleable.CircleButtonView_progressColor, Color.parseColor("#6ABF66"));
         a.recycle();
@@ -77,7 +77,7 @@ public class CircleButtonView extends View {
         mProgressCirclePaint.setColor(mProgressColor);
 
         mProgressAni = ValueAnimator.ofFloat(0, 360f);
-        mProgressAni.setDuration(mTime * 1000);
+        mProgressAni.setDuration(mMaxTime * 1000);
     }
 
     @Override
@@ -269,6 +269,15 @@ public class CircleButtonView extends View {
 
             }
         });
+    }
+
+    public void setMaxTime(int maxTime) {
+        this.mMaxTime = maxTime;
+        mProgressAni.setDuration(mMaxTime * 1000);
+    }
+
+    public void setMinTime(int minTime) {
+        this.mMinTime = minTime;
     }
 
     /**
