@@ -1,0 +1,59 @@
+com/kathline/cameralib/PermissionUtil.java
+ com.kathline.cameralib.PermissionUtil
+ com.kathline.cameralib.PermissionUtil$1
+ com.kathline.cameralib.PermissionUtil$Permission
+ com.kathline.cameralib.PermissionUtil$PermissionFragment
+ com.kathline.cameralib.PermissionUtil$PermissionListener
+ com.kathline.cameralib.PermissionUtil$PermissionSettingPage
+com/kathline/cameralib/PreferenceUtils.java
+ com.kathline.cameralib.PreferenceUtils
+com/kathline/cameralib/AngleUtil.java
+ com.kathline.cameralib.AngleUtil
+com/kathline/cameralib/VisionImageProcessor.java
+ com.kathline.cameralib.VisionImageProcessor
+com/kathline/cameralib/FrameMetadata.java
+ com.kathline.cameralib.FrameMetadata
+ com.kathline.cameralib.FrameMetadata$1
+ com.kathline.cameralib.FrameMetadata$Builder
+com/kathline/cameralib/CameraSourcePreview.java
+ com.kathline.cameralib.CameraSourcePreview
+ com.kathline.cameralib.CameraSourcePreview$1
+ com.kathline.cameralib.CameraSourcePreview$SurfaceCallback
+com/kathline/cameralib/BuildConfig.java
+ com.kathline.cameralib.BuildConfig
+com/kathline/cameralib/FileUtil.java
+ com.kathline.cameralib.FileUtil
+com/kathline/cameralib/MLKit.java
+ com.kathline.cameralib.MLKit
+ com.kathline.cameralib.MLKit$1
+ com.kathline.cameralib.MLKit$1$1
+ com.kathline.cameralib.MLKit$2
+ com.kathline.cameralib.MLKit$2$1
+ com.kathline.cameralib.MLKit$CallBack
+com/kathline/cameralib/CameraInterface.java
+ com.kathline.cameralib.CameraInterface
+ com.kathline.cameralib.CameraInterface$1
+ com.kathline.cameralib.CameraInterface$2
+ com.kathline.cameralib.CameraInterface$3
+ com.kathline.cameralib.CameraInterface$3$1
+ com.kathline.cameralib.CameraInterface$3$2
+ com.kathline.cameralib.CameraInterface$StopRecordCallback
+ com.kathline.cameralib.CameraInterface$TakePictureCallback
+com/kathline/cameralib/Size.java
+ com.kathline.cameralib.Size
+com/kathline/cameralib/CameraImageGraphic.java
+ com.kathline.cameralib.CameraImageGraphic
+com/kathline/cameralib/GraphicOverlay.java
+ com.kathline.cameralib.GraphicOverlay
+ com.kathline.cameralib.GraphicOverlay$Graphic
+com/kathline/cameralib/GestureDetectorUtil.java
+ com.kathline.cameralib.GestureDetectorUtil
+ com.kathline.cameralib.GestureDetectorUtil$1
+ com.kathline.cameralib.GestureDetectorUtil$2
+com/kathline/cameralib/CameraSource.java
+ com.kathline.cameralib.CameraSource
+ com.kathline.cameralib.CameraSource$1
+ com.kathline.cameralib.CameraSource$CameraPreviewCallback
+ com.kathline.cameralib.CameraSource$FrameProcessingRunnable
+ com.kathline.cameralib.CameraSource$OnCameraListener
+ com.kathline.cameralib.CameraSource$SizePair
