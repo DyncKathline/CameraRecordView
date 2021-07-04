@@ -1,4 +1,4 @@
-package com.kathline.cameralib;
+package com.kathline.cameralib.utils;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -17,14 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-/**
- * =====================================
- * 作    者: 陈嘉桐
- * 版    本：1.1.4
- * 创建日期：2017/4/25
- * 描    述：
- * =====================================
- */
 public class FileUtil {
     private static final File parentPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
     private static String storagePath = "";
@@ -160,6 +152,16 @@ public class FileUtil {
             return true;
         }
         return false;
+    }
+
+    //Android M 之前的版本
+    public static boolean beforeAndroidM() {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M;
+    }
+
+    //Android N 之前的版本
+    public static boolean beforeAndroidN() {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.N;
     }
 
     //Android 10 之前的版本

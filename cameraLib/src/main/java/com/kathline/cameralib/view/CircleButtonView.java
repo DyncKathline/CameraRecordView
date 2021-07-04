@@ -1,8 +1,9 @@
-package com.kathline.cameraview;
+package com.kathline.cameralib.view;
 
 import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -12,8 +13,12 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
+
+import com.kathline.cameralib.R;
 
 public class CircleButtonView extends View {
     private static final int WHAT_LONG_CLICK = 1;
@@ -34,13 +39,19 @@ public class CircleButtonView extends View {
     private float mCurrentProgress;//当前进度
 
     private long mLongClickTime = 500;//长按最短时间(毫秒)，
-    private int mMaxTime = 5;//录制最大时间s
-    private int mMinTime = 3;//录制最短时间
+    private long mMaxTime = 30000;//录制最大时间s
+    private long mMinTime = 1000;//录制最短时间
     private int mProgressColor;//进度条颜色
     private float mProgressW = 18f;//圆环宽度
 
     private boolean isPressed;//当前手指处于按压状态
     private ValueAnimator mProgressAni;//圆弧进度变化
+
+    public static final int BUTTON_STATE_ONLY_CAPTURE = 0x101;      //只能拍照
+    public static final int BUTTON_STATE_ONLY_RECORDER = 0x102;     //只能录像
+    public static final int BUTTON_STATE_BOTH = 0x103;              //两者都可以
+
+    private int state;//按钮可执行的功能状态（拍照,录制,两者）
 
 
     public CircleButtonView(Context context) {
@@ -62,7 +73,7 @@ public class CircleButtonView extends View {
         this.mContext = context;
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.CircleButtonView);
         mMinTime = a.getInt(R.styleable.CircleButtonView_minTime, 0);
-        mMaxTime = a.getInt(R.styleable.CircleButtonView_maxTime, 10);
+        mMaxTime = a.getInt(R.styleable.CircleButtonView_maxTime, 10000);
         mProgressW = a.getDimension(R.styleable.CircleButtonView_progressWidth, 12f);
         mProgressColor = a.getColor(R.styleable.CircleButtonView_progressColor, Color.parseColor("#6ABF66"));
         a.recycle();
@@ -77,7 +88,22 @@ public class CircleButtonView extends View {
         mProgressCirclePaint.setColor(mProgressColor);
 
         mProgressAni = ValueAnimator.ofFloat(0, 360f);
-        mProgressAni.setDuration(mMaxTime * 1000);
+        mProgressAni.setDuration(mMaxTime);
+
+        WindowManager manager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        manager.getDefaultDisplay().getMetrics(outMetrics);
+
+        int layout_width = 0;
+        int layout_height = 0;
+        if (this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            layout_width = outMetrics.widthPixels;
+        } else {
+            layout_width = outMetrics.widthPixels / 2;
+        }
+        mWidth = (int) (layout_width / 5f);
+
+        state = BUTTON_STATE_BOTH;
     }
 
     @Override
@@ -123,11 +149,13 @@ public class CircleButtonView extends View {
             switch (msg.what) {
                 case WHAT_LONG_CLICK:
                     //长按事件触发
-                    if (onLongClickListener != null) {
-                        onLongClickListener.onLongClick();
+                    if(state == BUTTON_STATE_BOTH || state == BUTTON_STATE_ONLY_RECORDER) {
+                        if (onLongClickListener != null) {
+                            onLongClickListener.onLongClick();
+                        }
+                        //内外圆动画，内圆缩小，外圆放大
+                        startAnimation(mBigRadius, mBigRadius * 1.33f, mSmallRadius, mSmallRadius * 0.7f);
                     }
-                    //内外圆动画，内圆缩小，外圆放大
-                    startAnimation(mBigRadius, mBigRadius * 1.33f, mSmallRadius, mSmallRadius * 0.7f);
                     break;
             }
         }
@@ -149,11 +177,13 @@ public class CircleButtonView extends View {
                 mEndTime = System.currentTimeMillis();
                 if (mEndTime - mStartTime < mLongClickTime) {
                     mHandler.removeMessages(WHAT_LONG_CLICK);
-                    if (onClickListener != null)
-                        onClickListener.onClick();
+                    if(state == BUTTON_STATE_BOTH || state == BUTTON_STATE_ONLY_CAPTURE) {
+                        if (onClickListener != null)
+                            onClickListener.onClick();
+                    }
                 } else {
                     startAnimation(mBigRadius, mInitBitRadius, mSmallRadius, mInitSmallRadius);//手指离开时动画复原
-                    if (mProgressAni != null && mProgressAni.getCurrentPlayTime() / 1000 < mMinTime && !isMaxTime) {
+                    if (mProgressAni != null && mProgressAni.getCurrentPlayTime() < mMinTime && !isMaxTime) {
                         if (onLongClickListener != null) {
                             onLongClickListener.onNoMinRecord(mMinTime);
                         }
@@ -271,13 +301,22 @@ public class CircleButtonView extends View {
         });
     }
 
-    public void setMaxTime(int maxTime) {
+    public void setMaxTime(long maxTime) {
         this.mMaxTime = maxTime;
-        mProgressAni.setDuration(mMaxTime * 1000);
+        mProgressAni.setDuration(mMaxTime);
     }
 
-    public void setMinTime(int minTime) {
+    public void setMinTime(long minTime) {
         this.mMinTime = minTime;
+    }
+
+    //设置按钮功能（拍照和录像）
+    public void setFeatures(int state) {
+        this.state = state;
+    }
+
+    public long getCurrentPlayTime() {
+        return mProgressAni.getCurrentPlayTime() / 1000;
     }
 
     /**
@@ -287,7 +326,7 @@ public class CircleButtonView extends View {
         void onLongClick();
 
         //未达到最小录制时间
-        void onNoMinRecord(int currentTime);
+        void onNoMinRecord(long currentTime);
 
         //录制完成
         void onRecordFinishedListener();

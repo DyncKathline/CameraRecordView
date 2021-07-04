@@ -1,4 +1,4 @@
-package com.kathline.cameraview;
+package com.kathline.cameralib.view;
 
 import android.content.Context;
 import android.content.res.Configuration;
@@ -14,6 +14,8 @@ import android.view.WindowManager;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+
+import com.kathline.cameralib.R;
 
 /**
  * =====================================
@@ -102,7 +104,7 @@ public class TypeButton extends View {
         this.button_type = type;
 
         setSize(size);
-        accentColor = ContextCompat.getColor(context, R.color.camera_fg_accent);
+        accentColor = ContextCompat.getColor(context, R.color.easy_photos_camera_fg_accent);
     }
 
     @Override

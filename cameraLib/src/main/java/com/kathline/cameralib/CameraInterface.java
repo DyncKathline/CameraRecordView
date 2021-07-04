@@ -17,16 +17,17 @@ import android.os.Build;
 import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+
+import com.kathline.cameralib.utils.AngleUtil;
+import com.kathline.cameralib.utils.FileUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,12 +36,7 @@ import java.util.List;
 import static android.graphics.Bitmap.createBitmap;
 
 /**
- * =====================================
- * 作    者: 陈嘉桐
- * 版    本：1.1.4
- * 创建日期：2017/4/25
- * 描    述：camera操作单例
- * =====================================
+ * 拍照录像功能
  */
 public class CameraInterface {
 
@@ -181,7 +177,7 @@ public class CameraInterface {
         return mCamera.getParameters().getZoom();
     }
 
-    void setMediaQuality(int quality) {
+    public void setMediaQuality(int quality) {
         this.mediaQuality = quality;
     }
 
