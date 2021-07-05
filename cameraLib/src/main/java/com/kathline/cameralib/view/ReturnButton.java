@@ -13,14 +13,6 @@ import android.view.WindowManager;
 
 import androidx.annotation.Nullable;
 
-/**
- * =====================================
- * 作    者: 陈嘉桐 445263848@qq.com
- * 版    本：1.0.4
- * 创建日期：2017/4/26
- * 描    述：向下箭头的退出按钮
- * =====================================
- */
 public class ReturnButton extends View {
 
     private int size;

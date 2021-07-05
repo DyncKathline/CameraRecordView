@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btn).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Setting.videoMaxSecond = 10000;
+                Setting.recordDuration = 10000;
                 startActivity(new Intent(MainActivity.this, CameraActivity.class));
             }
         });

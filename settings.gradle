@@ -1,3 +1,3 @@
-rootProject.name = "CameraView"
+rootProject.name = "CameraRecordView"
 include ':app'
 include ':cameraLib'

@@ -125,7 +125,7 @@ public class CameraActivity extends AppCompatActivity {
             }
 
             @Override
-            public void recordSuccess(final String url, Bitmap firstFrame) {
+            public void recordSuccess(final String url, Bitmap firstFrame, long duration) {
                 //获取视频路径
                 if (FileUtil.beforeAndroidTen()) {
                     //String path = FileUtil.saveBitmap(applicationName, firstFrame);

@@ -81,8 +81,9 @@ public class CameraView extends FrameLayout {
         mClPhoto = view.findViewById(R.id.cl_photo);
 
         mTvTip.setText(getTipText());
+        mCircleView.setFeatures(getFeatures());
         mCircleView.setMinTime(Setting.videoMinSecond);
-        mCircleView.setMaxTime(Setting.videoMaxSecond);
+        mCircleView.setMaxTime(Setting.recordDuration);
 
         mIvRecordVideoConfirm.setType(TypeButton.TYPE_CONFIRM);
 
@@ -109,7 +110,6 @@ public class CameraView extends FrameLayout {
                 mlKit.switchCamera();
             }
         });
-        mCircleView.setFeatures(CircleButtonView.BUTTON_STATE_BOTH);
         mCircleView.setOnClickListener(new CircleButtonView.OnClickListener() {
             @Override
             public void onClick() {
@@ -177,8 +177,9 @@ public class CameraView extends FrameLayout {
                         cameraListener.captureSuccess(mBitmap);
                     }
                 }else if(mSvRecordVideo.getVisibility() == View.VISIBLE) {
+                    CameraInterface.getInstance().stopVideo();
                     if(cameraListener != null) {
-                        cameraListener.recordSuccess(videoFilePath, firstFrame);
+                        cameraListener.recordSuccess(videoFilePath, firstFrame, mCircleView.getCurrentPlayTime());
                     }
                 }
             }
@@ -207,6 +208,17 @@ public class CameraView extends FrameLayout {
         }
     }
 
+    private int getFeatures() {
+        switch (Setting.captureType) {
+            case Capture.ALL:
+                return CircleButtonView.BUTTON_STATE_BOTH;
+            case Capture.IMAGE:
+                return CircleButtonView.BUTTON_STATE_ONLY_CAPTURE;
+            default:
+                return CircleButtonView.BUTTON_STATE_ONLY_RECORDER;
+        }
+    }
+
     //设置CaptureButton功能（拍照和录像）
     public void setFeatures(int state) {
         this.mCircleView.setFeatures(state);
@@ -229,7 +241,7 @@ public class CameraView extends FrameLayout {
 
         void captureSuccess(Bitmap bitmap);
 
-        void recordSuccess(String url, Bitmap firstFrame);
+        void recordSuccess(String url, Bitmap firstFrame, long duration);
     }
 
     private CameraListener cameraListener;

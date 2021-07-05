@@ -83,6 +83,12 @@ public class MLKit implements LifecycleObserver {
         startCameraSource();
     }
 
+    public void setFacing(int facing) {
+        if(cameraSource != null) {
+            cameraSource.setFacing(facing);
+        }
+    }
+
     public boolean hasLight() {
         return activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
     }

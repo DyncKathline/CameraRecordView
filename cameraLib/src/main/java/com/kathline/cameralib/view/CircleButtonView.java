@@ -316,7 +316,7 @@ public class CircleButtonView extends View {
     }
 
     public long getCurrentPlayTime() {
-        return mProgressAni.getCurrentPlayTime() / 1000;
+        return mProgressAni.getCurrentPlayTime();
     }
 
     /**

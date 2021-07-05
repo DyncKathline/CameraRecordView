@@ -37,7 +37,7 @@
         android:id="@+id/tv_tip"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@color/easy_photos_camera_fg_primary"
+        android:textColor="@color/photos_camera_fg_primary"
         android:layout_marginBottom="5dp"
         app:layout_constraintBottom_toTopOf="@+id/circle_view"
         app:layout_constraintLeft_toLeftOf="parent"
