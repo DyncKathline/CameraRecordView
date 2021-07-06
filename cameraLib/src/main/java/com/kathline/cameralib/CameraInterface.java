@@ -436,7 +436,6 @@ public class CameraInterface {
                     mMediaPlayer.setDisplay(surfaceView.getHolder());
                 }
                 try {
-                    mMediaPlayer.reset();
                     mMediaPlayer.setDataSource(url);
                     mMediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT);
                     mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
