@@ -19,6 +19,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,7 +62,7 @@ public class PermissionUtil {
         ), permission, onDenied);
     }
 
-    public void showDialogTips(Context context, String msg, List<String> permission, DialogInterface.OnClickListener onDenied) {
+    public void showDialogTips(final Context context, String msg, final List<String> permission, DialogInterface.OnClickListener onDenied) {
         String message = TextUtils.isEmpty(msg) ? String.format("您拒绝了相关权限，无法正常使用本功能。请前往 设置->应用管理->%s->权限管理中启用 %s 权限", context.getString(R.string.app_name), listToString(permission)) : msg;
         AlertDialog alertDialog = new AlertDialog.Builder(context).setTitle("权限被禁用").setMessage(message).setCancelable(false)
                 .setNegativeButton("返回", onDenied)
@@ -161,9 +162,9 @@ public class PermissionUtil {
         /**
          * 权限监听接口
          */
-        private PermissionListener listener;
+        private WeakReference<PermissionListener> listener;
         public void setListener(PermissionListener listener) {
-            this.listener = listener;
+            this.listener = new WeakReference<>(listener);
         }
 
         @Override
@@ -248,8 +249,8 @@ public class PermissionUtil {
          * 权限全部已经授权
          */
         private void permissionAllGranted() {
-            if (listener != null) {
-                listener.onGranted();
+            if (listener.get() != null) {
+                listener.get().onGranted();
             }
         }
 
@@ -259,8 +260,8 @@ public class PermissionUtil {
          * @param deniedList 被拒绝的权限
          */
         private void permissionHasDenied(List<String> deniedList) {
-            if (listener != null) {
-                listener.onDenied(deniedList);
+            if (listener.get() != null) {
+                listener.get().onDenied(deniedList);
             }
         }
 
@@ -270,8 +271,8 @@ public class PermissionUtil {
          * @param deniedList 勾选了不在询问的权限
          */
         private void permissionShouldShowRationale(List<String> deniedList) {
-            if (listener != null) {
-                listener.onShouldShowRationale(deniedList);
+            if (listener.get() != null) {
+                listener.get().onShouldShowRationale(deniedList);
             }
         }
     }

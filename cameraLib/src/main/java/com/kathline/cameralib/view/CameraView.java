@@ -2,6 +2,10 @@ package com.kathline.cameralib.view;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -10,6 +14,7 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -26,6 +31,7 @@ import com.kathline.cameralib.R;
 import com.kathline.cameralib.Setting;
 import com.kathline.cameralib.VisionImageProcessor;
 import com.kathline.cameralib.constant.Capture;
+import com.kathline.cameralib.utils.ThreadUtil;
 
 import java.nio.ByteBuffer;
 
@@ -49,6 +55,9 @@ public class CameraView extends FrameLayout {
     private String videoFilePath = "";
     private Bitmap firstFrame;
     private Bitmap mBitmap;
+    private String tipStr = "";
+    private boolean isShowTip = true;
+    private ThreadUtil threadUtil;
 
     public CameraView(@NonNull Context context) {
         super(context);
@@ -126,15 +135,48 @@ public class CameraView extends FrameLayout {
                 });
             }
         });
+        threadUtil = new ThreadUtil();
         mCircleView.setOnLongClickListener(new CircleButtonView.OnLongClickListener() {
+
+            private ThreadUtil.TimerRunnable task;
+            private int mTiming = 0;
+
             @Override
             public void onLongClick() {
-                mTvTip.setVisibility(GONE);
                 CameraInterface.getInstance().startRecord(mlKit.getCameraSource(), mPreviewView.getSurfaceView().getHolder().getSurface());
+                releaseTiming();
+                if(isShowTip) {
+                    task = new ThreadUtil.TimerRunnable() {
+                        @Override
+                        public boolean run() {
+                            mTiming++;
+                            StringBuilder sbTiming = new StringBuilder(mTiming + "");
+                            if (mTiming < 10) {
+                                sbTiming.insert(0, "0");
+                            }
+                            sbTiming.insert(0, "00:");
+                            mTvTip.setText(sbTiming.toString());
+                            return false;
+                        }
+                    };
+                    threadUtil.schedule(task, 1000, 1000);
+                }
+            }
+
+            private void releaseTiming() {
+                mTiming = 0;
+                if(task != null) {
+                    threadUtil.getHandler().removeCallbacks(task.mLastTicker);
+                }
             }
 
             @Override
             public void onNoMinRecord(long currentTime) {
+                releaseTiming();
+                mTvTip.setVisibility(VISIBLE);
+                mTvTip.setText(getTipText());
+                String tip = getContext().getResources().getString(R.string.recode_min_video_time_tip);
+                Toast.makeText(getContext(), String.format(tip, currentTime/1000), Toast.LENGTH_SHORT).show();
                 CameraInterface.getInstance().stopRecord(true, new CameraInterface.StopRecordCallback() {
                     @Override
                     public void recordResult(String url, Bitmap firstFrame) {
@@ -145,6 +187,7 @@ public class CameraView extends FrameLayout {
 
             @Override
             public void onRecordFinishedListener() {
+                releaseTiming();
                 CameraInterface.getInstance().stopRecord(false, new CameraInterface.StopRecordCallback() {
                     @Override
                     public void recordResult(String url, Bitmap firstFrame) {
@@ -162,6 +205,7 @@ public class CameraView extends FrameLayout {
             @Override
             public void onClick(View v) {
                 mTvTip.setVisibility(VISIBLE);
+                mTvTip.setText(getTipText());
                 mClPhoto.setVisibility(View.GONE);
                 if(mSvRecordVideo.getVisibility() == View.VISIBLE) {
                     CameraInterface.getInstance().stopVideo();
@@ -197,6 +241,9 @@ public class CameraView extends FrameLayout {
     private String getTipText() {
         String imageTip = getContext().getString(R.string.tap_take_photo);
         String videoTip = getContext().getString(R.string.long_press_camera);
+        if(!TextUtils.isEmpty(tipStr)) {
+            return tipStr;
+        }
         switch (Setting.captureType) {
             case Capture.ALL:
                 String split = getContext().getString(R.string.tap_take_photo_long_press_camera_split);
@@ -229,11 +276,21 @@ public class CameraView extends FrameLayout {
         CameraInterface.getInstance().setMediaQuality(quality);
     }
 
+    public void setMinDuration(long duration) {
+        mCircleView.setMinTime(duration);
+    }
+
+    public void setDuration(long duration) {
+        mCircleView.setMaxTime(duration);
+    }
+
     public void setTip(String tip) {
+        tipStr = tip;
         mTvTip.setText(tip);
     }
 
     public void enableCameraTip(boolean enable) {
+        isShowTip = enable;
         mTvTip.setVisibility(enable ? View.VISIBLE : View.INVISIBLE);
     }
 
@@ -271,4 +328,5 @@ public class CameraView extends FrameLayout {
     public void setCameraPreViewListener(CameraPreViewListener listener) {
         cameraPreViewListener = listener;
     }
+
 }

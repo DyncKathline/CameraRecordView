@@ -1,10 +1,12 @@
 package com.kathline.cameralib;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -22,6 +24,8 @@ import com.kathline.cameralib.constant.Capture;
 import com.kathline.cameralib.constant.Code;
 import com.kathline.cameralib.constant.Key;
 import com.kathline.cameralib.utils.FileUtil;
+import com.kathline.cameralib.utils.MediaScannerConnectionUtils;
+import com.kathline.cameralib.utils.UriUtils;
 import com.kathline.cameralib.view.CameraView;
 import com.kathline.cameralib.view.CircleButtonView;
 
@@ -29,6 +33,7 @@ import java.io.File;
 
 public class CameraActivity extends AppCompatActivity {
 
+    private Context context;
     private CameraView mCameraView;
     private RelativeLayout mRlCoverView;
     private ProgressBar mPbProgress;
@@ -38,7 +43,7 @@ public class CameraActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        context = this;
         try {
             applicationName = getString(R.string.app_name);
             PackageManager packageManager = getApplicationContext().getPackageManager();
@@ -118,6 +123,12 @@ public class CameraActivity extends AppCompatActivity {
                 } else {
                     path = FileUtil.saveBitmapAndroidQ(CameraActivity.this, applicationName, bitmap);
                 }
+                if (!FileUtil.beforeAndroidTen()) {
+                    path = UriUtils.getPathByUri(context, Uri.parse(path));
+                }
+                if (path != null) {
+                    MediaScannerConnectionUtils.refresh(context, new File(path));// 更新媒体库
+                }
                 Intent intent = new Intent();
                 intent.putExtra(Key.EXTRA_RESULT_CAPTURE_IMAGE_PATH, path);
                 setResult(RESULT_OK, intent);
@@ -126,6 +137,17 @@ public class CameraActivity extends AppCompatActivity {
 
             @Override
             public void recordSuccess(final String url, Bitmap firstFrame, long duration) {
+                String path = url;
+                Uri uri;
+                if(url.startsWith("content://")) {
+                    uri = Uri.parse(url);
+                }else {
+                    uri = Uri.parse("file://" + url);
+                }
+                path = UriUtils.getPathByUri(getApplicationContext(), uri);
+                if (path != null) {
+                    MediaScannerConnectionUtils.refresh(context, new File(path));// 更新媒体库
+                }
                 //获取视频路径
                 if (FileUtil.beforeAndroidTen()) {
                     //String path = FileUtil.saveBitmap(applicationName, firstFrame);

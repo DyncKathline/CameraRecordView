@@ -409,11 +409,12 @@ public class CameraInterface {
             @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
             @Override
             public void run() {
-                if (mMediaPlayer == null) {
-                    mMediaPlayer = new MediaPlayer();
-                } else {
-                    mMediaPlayer.reset();
+                if (mMediaPlayer != null) {
+                    mMediaPlayer.stop();
+                    mMediaPlayer.release();
+                    mMediaPlayer = null;
                 }
+                mMediaPlayer = new MediaPlayer();
                 surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
                     @Override
                     public void surfaceCreated(@NonNull SurfaceHolder holder) {
@@ -435,6 +436,7 @@ public class CameraInterface {
                     mMediaPlayer.setDisplay(surfaceView.getHolder());
                 }
                 try {
+                    mMediaPlayer.reset();
                     mMediaPlayer.setDataSource(url);
                     mMediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT);
                     mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);

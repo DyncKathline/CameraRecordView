@@ -5,4 +5,6 @@
     <string name="long_press_camera">长按摄像</string>
 
     <string name="tap_take_photo_long_press_camera_split">，</string>
+
+    <string name="recode_min_video_time_tip">录制时间不能少于%ds</string>
 </resources>
